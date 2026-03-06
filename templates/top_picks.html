@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Top 5 Must-Buy Stocks — AI-powered stock scanner analyzes 50+ stocks to find the strongest buy recommendations.">
+    <title>Top 5 Must-Buy Stocks | StockAnalyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Top Picks specific styles */
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-link {
+            padding: 8px 20px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font);
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: var(--bg-card);
+        }
+
+        .nav-link.active {
+            color: var(--accent-green);
+            background: var(--accent-green-dim);
+            border-color: rgba(0, 230, 118, 0.2);
+        }
+
+        .page-hero {
+            text-align: center;
+            padding: 48px 24px 32px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-hero h2 {
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .page-hero h2 span {
+            background: var(--gradient-bullish);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-hero p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Market filter buttons */
+        .market-filters {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 24px 0;
+        }
+
+        .market-btn {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .market-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .market-btn.active {
+            background: var(--accent-blue-dim);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        /* Loading state for scanner */
+        .scanner-loading {
+            text-align: center;
+            padding: 80px 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .scanner-loading .spinner {
+            width: 56px;
+            height: 56px;
+            border-width: 4px;
+            margin-bottom: 24px;
+        }
+
+        .scanner-loading h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .scanner-loading p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .progress-bar-container {
+            width: 300px;
+            height: 4px;
+            background: var(--bg-card);
+            border-radius: 2px;
+            margin: 16px auto 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient-bullish);
+            border-radius: 2px;
+            animation: progress-move 8s ease-in-out;
+        }
+
+        @keyframes progress-move {
+            0% {
+                width: 0%;
+            }
+
+            20% {
+                width: 30%;
+            }
+
+            50% {
+                width: 55%;
+            }
+
+            80% {
+                width: 80%;
+            }
+
+            100% {
+                width: 95%;
+            }
+        }
+
+        /* Top Picks Cards */
+        .picks-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .pick-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: 60px 1fr auto;
+            gap: 20px;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            animation: fadeInUp 0.5s ease-out backwards;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .pick-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .pick-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .pick-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .pick-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .pick-card:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        .pick-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-green);
+        }
+
+        .pick-rank {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .pick-rank.rank-1 {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1a1a;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .pick-rank.rank-2 {
+            background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+            color: #1a1a1a;
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.3);
+        }
+
+        .pick-rank.rank-3 {
+            background: linear-gradient(135deg, #cd7f32, #a0522d);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(205, 127, 50, 0.3);
+        }
+
+        .pick-rank.rank-4,
+        .pick-rank.rank-5 {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+        }
+
+        .pick-details {
+            min-width: 0;
+        }
+
+        .pick-company {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pick-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .pick-ticker {
+            padding: 2px 8px;
+            background: var(--accent-blue-dim);
+            color: var(--accent-blue);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .pick-sector {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .pick-signals {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .pick-signal-tag {
+            padding: 2px 8px;
+            background: rgba(139, 148, 158, 0.1);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .pick-scores {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .pick-verdict {
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .pick-final-score {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .pick-score-breakdown {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+
+        .pick-sub-score {
+            text-align: center;
+        }
+
+        .pick-sub-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        .pick-sub-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .pick-price-info {
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .pick-price-change {
+            font-weight: 600;
+        }
+
+        .pick-price-change.positive {
+            color: var(--accent-green);
+        }
+
+        .pick-price-change.negative {
+            color: var(--accent-red);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .pick-card {
+                grid-template-columns: 48px 1fr;
+                gap: 14px;
+            }
+
+            .pick-scores {
+                grid-column: 1 / -1;
+                text-align: left;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .pick-score-breakdown {
+                justify-content: flex-start;
+            }
+
+            .page-hero h2 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">📊</span>
+                <h1>Stock<span class="accent">Analyzer</span></h1>
+            </div>
+            <p class="tagline">AI-Powered Investment Intelligence</p>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <a href="/" class="nav-link">🔍 Analyze Stock</a>
+        <a href="/top-picks" class="nav-link active">🏆 Top 5 Must-Buy</a>
+    </nav>
+
+    <!-- Hero -->
+    <section class="page-hero">
+        <h2>Top 5 <span>Must-Buy</span> Stocks</h2>
+        <p>Our scanner analyzes 50+ popular stocks across US and Indian markets using technical + fundamental analysis
+            to find the strongest picks.</p>
+
+        <!-- Market Filter -->
+        <div class="market-filters">
+            <button class="market-btn active" onclick="loadPicks('all')">🌍 All Markets</button>
+            <button class="market-btn" onclick="loadPicks('us')">🇺🇸 US Stocks</button>
+            <button class="market-btn" onclick="loadPicks('india')">🇮🇳 Indian Stocks</button>
+        </div>
+    </section>
+
+    <!-- Loading -->
+    <div id="scannerLoading" class="scanner-loading">
+        <div class="spinner"></div>
+        <h3>Scanning Stocks...</h3>
+        <p>Analyzing 50+ stocks across markets. This takes about 30-60 seconds.</p>
+        <div class="progress-bar-container">
+            <div class="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="picksContainer" class="picks-container hidden"></div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="empty-state hidden">
+        <h3>No strong buy picks found</h3>
+        <p>The scanner didn't find any stocks with a strong enough score in this market. Try a different market filter.
+        </p>
+    </div>
+
+    <!-- Error -->
+    <div id="errorContainer" class="error-container hidden" style="max-width: 600px; margin: 20px auto;">
+        <div class="error-card">
+            <span class="error-icon">⚠️</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p>Stock Investment Analyzer — Built for educational purposes. Not financial advice.</p>
+    </footer>
+
+    <script>
+        let currentMarket = 'all';
+
+        async function loadPicks(market) {
+            currentMarket = market;
+
+            // Update active button
+            document.querySelectorAll('.market-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Show loading
+            document.getElementById('scannerLoading').classList.remove('hidden');
+            document.getElementById('picksContainer').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('errorContainer').classList.add('hidden');
+
+            // Reset progress bar animation
+            const bar = document.querySelector('.progress-bar');
+            bar.style.animation = 'none';
+            bar.offsetHeight; // reflow
+            bar.style.animation = 'progress-move 45s ease-in-out';
+
+            try {
+                const response = await fetch(`/api/top-picks?market=${market}`);
+                const data = await response.json();
+
+                document.getElementById('scannerLoading').classList.add('hidden');
+
+                if (data.error) {
+                    document.getElementById('errorMessage').textContent = data.error;
+                    document.getElementById('errorContainer').classList.remove('hidden');
+                    return;
+                }
+
+                if (!data.picks || data.picks.length === 0) {
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    return;
+                }
+
+                renderPicks(data.picks);
+            } catch (err) {
+                document.getElementById('scannerLoading').classList.add('hidden');
+                document.getElementById('errorMessage').textContent = 'Failed to scan stocks: ' + err.message;
+                document.getElementById('errorContainer').classList.remove('hidden');
+            }
+        }
+
+        function renderPicks(picks) {
+            const container = document.getElementById('picksContainer');
+            container.innerHTML = '';
+
+            picks.forEach((pick, index) => {
+                const rank = index + 1;
+                const currency = pick.currency === 'INR' ? '₹' : '$';
+                const changeClass = (pick.dailyChangePct || 0) >= 0 ? 'positive' : 'negative';
+                const changeSign = (pick.dailyChangePct || 0) >= 0 ? '+' : '';
+
+                const signals = (pick.keySignals || [])
+                    .map(s => `<span class="pick-signal-tag">${escapeHtml(s)}</span>`)
+                    .join('');
+
+                const card = document.createElement('a');
+                card.className = 'pick-card';
+                card.href = `/?ticker=${encodeURIComponent(pick.ticker)}`;
+                card.innerHTML = `
+                    <div class="pick-rank rank-${rank}">#${rank}</div>
+                    <div class="pick-details">
+                        <div class="pick-company">${escapeHtml(pick.companyName)}</div>
+                        <div class="pick-meta">
+                            <span class="pick-ticker">${pick.ticker}</span>
+                            <span class="pick-sector">${pick.sector || ''}</span>
+                        </div>
+                        <div class="pick-signals">${signals}</div>
+                    </div>
+                    <div class="pick-scores">
+                        <div class="pick-verdict" style="color: ${pick.color}">${pick.verdict}</div>
+                        <div class="pick-final-score" style="color: ${pick.color}">${pick.finalScore}</div>
+                        <div class="pick-score-breakdown">
+                            <div class="pick-sub-score">
+                                <span class="pick-sub-label">Tech</span>
+                                <span class="pick-sub-value" style="color: ${scoreColor(pick.technicalScore)}">${pick.technicalScore}</span>
+                            </div>
+                            <div class="pick-sub-score">
+                                <span class="pick-sub-label">Fund</span>
+                                <span class="pick-sub-value" style="color: ${scoreColor(pick.fundamentalScore)}">${pick.fundamentalScore}</span>
+                            </div>
+                        </div>
+                        <div class="pick-price-info">
+                            ${currency}${pick.currentPrice}
+                            <span class="pick-price-change ${changeClass}">${changeSign}${pick.dailyChangePct || 0}%</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            container.classList.remove('hidden');
+        }
+
+        function scoreColor(score) {
+            if (score >= 65) return '#00e676';
+            if (score >= 45) return '#ff9800';
+            return '#f44336';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Auto-load on page open
+        loadPicks('all');
+    </script>
+</body>
+
+</html>
