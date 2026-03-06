@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Stock Investment Analyzer — AI-powered stock analysis with technical, fundamental, and sentiment indicators to help you make informed investment decisions.">
-    <title>Stock Investment Analyzer</title>
+        content="Stock Investment Analyzer — 8-Pillar institutional-grade stock analysis with technical, fundamental, sentiment, macro, policy, institutional, options, and sector rotation intelligence.">
+    <title>Stock Investment Analyzer — 8 Pillar Intelligence</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
@@ -16,33 +16,39 @@
 </head>
 
 <body>
+    <!-- Animated Background Orbs -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
     <!-- Header -->
     <header class="app-header">
         <div class="header-content">
             <div class="logo">
-                <span class="logo-icon">📊</span>
-                <h1>Stock<span class="accent">Analyzer</span></h1>
+                <div class="logo-icon-wrap">
+                    <span class="logo-icon">📊</span>
+                    <div class="logo-ring"></div>
+                </div>
+                <div>
+                    <h1>Stock<span class="accent">Analyzer</span> <span class="pro-badge">PRO</span></h1>
+                    <p class="tagline">8-Pillar Institutional Intelligence</p>
+                </div>
             </div>
-            <p class="tagline">AI-Powered Investment Intelligence</p>
+            <nav class="header-nav">
+                <a href="/" class="nav-link active">🔍 Analyze</a>
+                <a href="/top-picks" class="nav-link">🏆 Top Picks</a>
+            </nav>
         </div>
     </header>
-
-    <!-- Navigation -->
-    <nav
-        style="display:flex;justify-content:center;gap:12px;padding:12px 24px;background:var(--bg-secondary);border-bottom:1px solid var(--border);">
-        <a href="/"
-            style="padding:8px 20px;border-radius:8px;color:var(--accent-green);background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);text-decoration:none;font-size:14px;font-weight:600;font-family:var(--font);">🔍
-            Analyze Stock</a>
-        <a href="/top-picks"
-            style="padding:8px 20px;border-radius:8px;color:var(--text-secondary);text-decoration:none;font-size:14px;font-weight:600;font-family:var(--font);border:1px solid transparent;transition:all 0.2s;">🏆
-            Top 5 Must-Buy</a>
-    </nav>
 
     <!-- Search Section -->
     <section class="search-section">
         <div class="search-container">
+            <h2 class="search-headline">Analyze any stock with <span class="gradient-text">8 intelligence pillars</span>
+            </h2>
             <div class="search-box">
-                <input type="text" id="tickerInput" placeholder="Enter stock ticker (e.g., AAPL, RELIANCE.NS)"
+                <div class="search-icon">🔍</div>
+                <input type="text" id="tickerInput" placeholder="Enter ticker — AAPL, MSFT, RELIANCE.NS..."
                     autocomplete="off">
                 <button id="analyzeBtn" onclick="analyzeStock()">
                     <span class="btn-text">Analyze</span>
@@ -50,24 +56,32 @@
                 </button>
             </div>
             <div class="quick-tickers">
-                <span class="label">Quick:</span>
-                <button class="chip" onclick="quickAnalyze('AAPL')">AAPL</button>
-                <button class="chip" onclick="quickAnalyze('GOOGL')">GOOGL</button>
-                <button class="chip" onclick="quickAnalyze('MSFT')">MSFT</button>
-                <button class="chip" onclick="quickAnalyze('TSLA')">TSLA</button>
-                <button class="chip" onclick="quickAnalyze('NVDA')">NVDA</button>
-                <button class="chip" onclick="quickAnalyze('RELIANCE.NS')">RELIANCE</button>
-                <button class="chip" onclick="quickAnalyze('TCS.NS')">TCS</button>
+                <span class="label">Popular:</span>
+                <button class="chip" onclick="quickAnalyze('AAPL')"><span class="chip-dot green"></span>AAPL</button>
+                <button class="chip" onclick="quickAnalyze('GOOGL')"><span class="chip-dot blue"></span>GOOGL</button>
+                <button class="chip" onclick="quickAnalyze('MSFT')"><span class="chip-dot purple"></span>MSFT</button>
+                <button class="chip" onclick="quickAnalyze('TSLA')"><span class="chip-dot red"></span>TSLA</button>
+                <button class="chip" onclick="quickAnalyze('NVDA')"><span class="chip-dot green"></span>NVDA</button>
+                <button class="chip" onclick="quickAnalyze('RELIANCE.NS')"><span
+                        class="chip-dot orange"></span>RELIANCE</button>
+                <button class="chip" onclick="quickAnalyze('TCS.NS')"><span class="chip-dot teal"></span>TCS</button>
+                <button class="chip" onclick="quickAnalyze('AMZN')"><span class="chip-dot blue"></span>AMZN</button>
             </div>
         </div>
     </section>
 
-    <!-- Loading Spinner -->
+    <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
         <div class="loader">
-            <div class="spinner"></div>
-            <p>Analyzing <span id="loadingTicker"></span>...</p>
-            <p class="loader-sub">Fetching data, running technical & fundamental analysis</p>
+            <div class="spinner-ring">
+                <div class="spinner-orbit"></div>
+            </div>
+            <p class="loader-title">Analyzing <span id="loadingTicker" class="gradient-text"></span></p>
+            <p class="loader-sub">Running 8-pillar deep analysis — Technical · Fundamental · Sentiment · Macro · Policy
+                · Institutional · Options · Sector</p>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
         </div>
     </div>
 
@@ -82,12 +96,13 @@
     <!-- Results Section -->
     <main id="resultsSection" class="results-section hidden">
         <!-- Stock Header -->
-        <div class="stock-header">
+        <div class="stock-header glass-card">
             <div class="stock-info">
                 <h2 id="companyName" class="company-name">—</h2>
                 <div class="stock-meta">
                     <span id="tickerBadge" class="ticker-badge">—</span>
                     <span id="exchangeBadge" class="exchange-badge">—</span>
+                    <span id="sectorBadge" class="sector-badge" style="display:none">—</span>
                 </div>
             </div>
             <div class="price-info">
@@ -97,123 +112,209 @@
         </div>
 
         <!-- Recommendation Banner -->
-        <div id="recommendationBanner" class="recommendation-banner">
+        <div id="recommendationBanner" class="recommendation-banner glass-card">
             <div class="verdict-section">
                 <span class="verdict-label">RECOMMENDATION</span>
                 <span id="verdictText" class="verdict-text">—</span>
             </div>
-            <div class="score-section">
-                <span class="score-label">Overall Score</span>
-                <span id="finalScore" class="final-score">—</span>
+            <div class="score-ring-section">
+                <div class="score-ring" id="scoreRing">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6" />
+                        <circle id="scoreRingCircle" cx="50" cy="50" r="42" fill="none" stroke="#00e676"
+                            stroke-width="6" stroke-dasharray="0 264" stroke-linecap="round"
+                            transform="rotate(-90 50 50)"
+                            style="transition: stroke-dasharray 1.5s ease-out, stroke 0.5s;" />
+                    </svg>
+                    <span id="finalScore" class="ring-score">—</span>
+                    <span class="ring-label">SCORE</span>
+                </div>
             </div>
             <div class="confidence-section">
                 <span class="confidence-label">Confidence</span>
                 <span id="confidenceText" class="confidence-text">—</span>
+                <span id="marketRegime" class="regime-badge">—</span>
             </div>
         </div>
 
-        <!-- Score Cards -->
-        <div class="score-cards">
-            <div class="score-card" id="technicalCard">
-                <div class="score-card-header">
-                    <span class="score-card-icon">📊</span>
-                    <span class="score-card-title">Technical</span>
+        <!-- 8-Pillar Score Cards -->
+        <h3 class="section-title pillar-title">📊 8-Pillar Intelligence Breakdown</h3>
+        <div class="pillar-grid">
+            <!-- Technical -->
+            <div class="pillar-card" id="technicalCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">📈</span>
+                    <span class="pillar-name">Technical</span>
+                    <span id="techPillarScore" class="pillar-score">—</span>
                 </div>
-                <div class="gauge-container">
-                    <svg class="gauge" viewBox="0 0 120 80">
-                        <path class="gauge-bg" d="M 10 70 A 50 50 0 0 1 110 70" fill="none" stroke="#2a2d3a"
-                            stroke-width="10" stroke-linecap="round" />
-                        <path id="technicalGauge" class="gauge-fill" d="M 10 70 A 50 50 0 0 1 110 70" fill="none"
-                            stroke="#4caf50" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 157" />
-                    </svg>
-                    <span id="technicalScore" class="gauge-value">0</span>
+                <div class="pillar-bar-track">
+                    <div id="techBar" class="pillar-bar" style="width:0%"></div>
                 </div>
-                <div id="technicalSignals" class="score-signals"></div>
+                <div id="technicalSignals" class="pillar-signals"></div>
             </div>
-            <div class="score-card" id="fundamentalCard">
-                <div class="score-card-header">
-                    <span class="score-card-icon">📈</span>
-                    <span class="score-card-title">Fundamental</span>
+            <!-- Fundamental -->
+            <div class="pillar-card" id="fundamentalCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">💰</span>
+                    <span class="pillar-name">Fundamental</span>
+                    <span id="fundPillarScore" class="pillar-score">—</span>
                 </div>
-                <div class="gauge-container">
-                    <svg class="gauge" viewBox="0 0 120 80">
-                        <path class="gauge-bg" d="M 10 70 A 50 50 0 0 1 110 70" fill="none" stroke="#2a2d3a"
-                            stroke-width="10" stroke-linecap="round" />
-                        <path id="fundamentalGauge" class="gauge-fill" d="M 10 70 A 50 50 0 0 1 110 70" fill="none"
-                            stroke="#2196f3" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 157" />
-                    </svg>
-                    <span id="fundamentalScore" class="gauge-value">0</span>
+                <div class="pillar-bar-track">
+                    <div id="fundBar" class="pillar-bar" style="width:0%"></div>
                 </div>
-                <div id="fundamentalSignals" class="score-signals"></div>
+                <div id="fundamentalSignals" class="pillar-signals"></div>
             </div>
-            <div class="score-card" id="sentimentCard">
-                <div class="score-card-header">
-                    <span class="score-card-icon">📰</span>
-                    <span class="score-card-title">Sentiment</span>
+            <!-- Sentiment -->
+            <div class="pillar-card" id="sentimentCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">📰</span>
+                    <span class="pillar-name">Sentiment</span>
+                    <span id="sentPillarScore" class="pillar-score">—</span>
                 </div>
-                <div class="gauge-container">
-                    <svg class="gauge" viewBox="0 0 120 80">
-                        <path class="gauge-bg" d="M 10 70 A 50 50 0 0 1 110 70" fill="none" stroke="#2a2d3a"
-                            stroke-width="10" stroke-linecap="round" />
-                        <path id="sentimentGauge" class="gauge-fill" d="M 10 70 A 50 50 0 0 1 110 70" fill="none"
-                            stroke="#ff9800" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 157" />
-                    </svg>
-                    <span id="sentimentScore" class="gauge-value">0</span>
+                <div class="pillar-bar-track">
+                    <div id="sentBar" class="pillar-bar" style="width:0%"></div>
                 </div>
-                <div id="sentimentSignals" class="score-signals"></div>
+                <div id="sentimentSignals" class="pillar-signals"></div>
+            </div>
+            <!-- Macro -->
+            <div class="pillar-card" id="macroCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">🌍</span>
+                    <span class="pillar-name">Macro</span>
+                    <span id="macroPillarScore" class="pillar-score">—</span>
+                </div>
+                <div class="pillar-bar-track">
+                    <div id="macroBar" class="pillar-bar" style="width:0%"></div>
+                </div>
+                <div id="macroSignals" class="pillar-signals"></div>
+            </div>
+            <!-- Policy -->
+            <div class="pillar-card" id="policyCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">🏛️</span>
+                    <span class="pillar-name">Policy</span>
+                    <span id="policyPillarScore" class="pillar-score">—</span>
+                </div>
+                <div class="pillar-bar-track">
+                    <div id="policyBar" class="pillar-bar" style="width:0%"></div>
+                </div>
+                <div id="policySignals" class="pillar-signals"></div>
+            </div>
+            <!-- Institutional -->
+            <div class="pillar-card" id="institutionalCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">🏦</span>
+                    <span class="pillar-name">Institutional</span>
+                    <span id="instPillarScore" class="pillar-score">—</span>
+                </div>
+                <div class="pillar-bar-track">
+                    <div id="instBar" class="pillar-bar" style="width:0%"></div>
+                </div>
+                <div id="institutionalSignals" class="pillar-signals"></div>
+            </div>
+            <!-- Options -->
+            <div class="pillar-card" id="optionsCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">📊</span>
+                    <span class="pillar-name">Options</span>
+                    <span id="optPillarScore" class="pillar-score">—</span>
+                </div>
+                <div class="pillar-bar-track">
+                    <div id="optBar" class="pillar-bar" style="width:0%"></div>
+                </div>
+                <div id="optionsSignals" class="pillar-signals"></div>
+            </div>
+            <!-- Sector Rotation -->
+            <div class="pillar-card" id="sectorCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">🔄</span>
+                    <span class="pillar-name">Sector</span>
+                    <span id="secPillarScore" class="pillar-score">—</span>
+                </div>
+                <div class="pillar-bar-track">
+                    <div id="secBar" class="pillar-bar" style="width:0%"></div>
+                </div>
+                <div id="sectorSignals" class="pillar-signals"></div>
+            </div>
+            <!-- Earnings -->
+            <div class="pillar-card pillar-card-wide" id="earningsCard">
+                <div class="pillar-header">
+                    <span class="pillar-emoji">📅</span>
+                    <span class="pillar-name">Earnings Outlook</span>
+                    <span id="earnPillarScore" class="pillar-score">—</span>
+                </div>
+                <div class="pillar-bar-track">
+                    <div id="earnBar" class="pillar-bar" style="width:0%"></div>
+                </div>
+                <div id="earningsSignals" class="pillar-signals"></div>
+            </div>
+        </div>
+
+        <!-- Radar Chart + Weight Breakdown -->
+        <div class="radar-weights-row">
+            <div class="chart-card glass-card radar-card">
+                <h3>Pillar Radar</h3>
+                <canvas id="radarChart"></canvas>
+            </div>
+            <div class="chart-card glass-card weights-card">
+                <h3>Dynamic Weight Allocation</h3>
+                <div id="weightBars" class="weight-bars"></div>
             </div>
         </div>
 
         <!-- Charts Section -->
         <div class="charts-section">
-            <div class="chart-card chart-wide">
+            <div class="chart-card glass-card chart-wide">
                 <h3>Price & Moving Averages</h3>
                 <canvas id="priceChart"></canvas>
             </div>
             <div class="chart-row">
-                <div class="chart-card">
+                <div class="chart-card glass-card">
                     <h3>RSI (14)</h3>
                     <canvas id="rsiChart"></canvas>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card glass-card">
                     <h3>MACD</h3>
                     <canvas id="macdChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Fundamental Metrics Table -->
+        <!-- Fundamental Metrics -->
         <div class="metrics-section">
-            <h3 class="section-title">Key Fundamental Metrics</h3>
-            <div class="metrics-grid" id="metricsGrid">
-                <!-- Populated by JS -->
-            </div>
+            <h3 class="section-title">📋 Key Fundamental Metrics</h3>
+            <div class="metrics-grid" id="metricsGrid"></div>
+        </div>
+
+        <!-- Piotroski F-Score -->
+        <div id="piotroskiSection" class="piotroski-section" style="display:none">
+            <h3 class="section-title">🏥 Piotroski F-Score <span id="piotroskiValue" class="piotroski-value"></span>
+            </h3>
+            <div id="piotroskiDetails" class="piotroski-grid"></div>
         </div>
 
         <!-- News Section -->
         <div class="news-section">
-            <h3 class="section-title">Recent News & Sentiment</h3>
+            <h3 class="section-title">📰 News & Sentiment</h3>
             <div class="news-summary" id="newsSummary"></div>
-            <div class="news-list" id="newsList">
-                <!-- Populated by JS -->
-            </div>
+            <div class="news-list" id="newsList"></div>
         </div>
 
         <!-- Reasoning Section -->
-        <div class="reasoning-section">
-            <h3 class="section-title">Analysis Summary</h3>
+        <div class="reasoning-section glass-card">
+            <h3 class="section-title">🧠 Full Analysis & 30-Day Outlook</h3>
             <div id="reasoningText" class="reasoning-text"></div>
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="app-footer">
-        <p>Stock Investment Analyzer — Built for educational purposes. Not financial advice.</p>
+        <p>Stock Investment Analyzer PRO — 8-Pillar Institutional Intelligence Engine</p>
+        <p class="footer-sub">Built for educational purposes. Not financial advice. Always do your own research.</p>
     </footer>
 
     <script src="/static/app.js"></script>
     <script>
-        // Auto-analyze from URL query param (e.g., /?ticker=AAPL)
         (function () {
             const params = new URLSearchParams(window.location.search);
             const ticker = params.get('ticker');
