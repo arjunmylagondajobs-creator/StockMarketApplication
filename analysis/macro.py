@@ -50,53 +50,66 @@ def _fetch_ticker_data(symbol, period="3mo"):
 
 
 def _score_vix(vix_val):
-    """VIX score: low VIX = bullish environment."""
+    """VIX score: low VIX = bullish environment. v3: normal VIX (18-25) scores 58 not 50."""
     if vix_val is None:
-        return 50, "VIX data unavailable"
+        return 55, "VIX data unavailable"
     if vix_val < 12:
-        return 80, f"VIX ({vix_val:.1f}) — very low fear, risk-on environment"
-    elif vix_val < 18:
-        return 70, f"VIX ({vix_val:.1f}) — calm markets, conducive for equities"
+        return 82, f"VIX ({vix_val:.1f}) — very low fear, risk-on environment"
+    elif vix_val < 16:
+        return 74, f"VIX ({vix_val:.1f}) — calm markets, strongly conducive for equities"
+    elif vix_val < 20:
+        return 65, f"VIX ({vix_val:.1f}) — normal volatility, healthy market"
     elif vix_val < 25:
-        return 50, f"VIX ({vix_val:.1f}) — moderate volatility"
+        return 58, f"VIX ({vix_val:.1f}) — moderate volatility, normal conditions"
+    elif vix_val < 30:
+        return 42, f"VIX ({vix_val:.1f}) — elevated anxiety, some caution warranted"
     elif vix_val < 35:
-        return 30, f"VIX ({vix_val:.1f}) — elevated fear, risk-off pressure"
+        return 28, f"VIX ({vix_val:.1f}) — elevated fear, risk-off pressure"
     else:
-        return 10, f"VIX ({vix_val:.1f}) — extreme fear/panic in markets"
+        return 12, f"VIX ({vix_val:.1f}) — extreme fear/panic in markets"
 
 
 def _score_us10y(yield_val, pct_change):
-    """10Y yield: rising yields hurt equities (esp. growth/tech), falling = tailwind."""
+    """10Y yield: v3 — 4.0-4.5% is the new normal (score 50 not 45)."""
     if yield_val is None:
-        return 50, "US 10Y yield data unavailable"
+        return 55, "US 10Y yield data unavailable"
     signal = f"US 10Y Yield: {yield_val:.2f}%"
     score = 50
-    if yield_val > 5.0:
-        score = 20
+    if yield_val > 5.5:
+        score = 15
         signal += " — very high yields, significant equity headwind"
+    elif yield_val > 5.0:
+        score = 28
+        signal += " — high yields, strong competition from bonds"
     elif yield_val > 4.5:
-        score = 35
-        signal += " — high yields, equity competition from bonds"
+        score = 40
+        signal += " — elevated yields, some pressure on valuations"
     elif yield_val > 4.0:
-        score = 45
-        signal += " — elevated yields, modest pressure on valuations"
+        score = 50
+        signal += " — yields in normal range for current cycle"
     elif yield_val > 3.5:
-        score = 55
-        signal += " — moderate yields, equities still attractive"
+        score = 60
+        signal += " — moderate yields, equities attractive"
     elif yield_val > 2.5:
-        score = 65
+        score = 70
         signal += " — low yields, equity-friendly environment"
     else:
-        score = 75
+        score = 78
         signal += " — very low yields, strong tailwind for equities"
 
     if pct_change is not None:
         if pct_change > 10:
-            score = max(0, score - 15)
+            score = max(0, score - 12)
             signal += f" (rising sharply +{pct_change:.1f}% in 1M — hawkish pressure)"
+        elif pct_change > 5:
+            score = max(0, score - 5)
+            signal += f" (rising +{pct_change:.1f}% in 1M — mild hawkish)"
         elif pct_change < -10:
             score = min(100, score + 10)
             signal += f" (falling {pct_change:.1f}% in 1M — dovish/rate-cut signal)"
+        elif pct_change < -5:
+            score = min(100, score + 5)
+            signal += f" (declining {pct_change:.1f}% in 1M — mildly dovish)"
     return score, signal
 
 

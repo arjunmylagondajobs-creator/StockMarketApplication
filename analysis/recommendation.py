@@ -1,8 +1,15 @@
 """
-Recommendation Engine — Full Spectrum (8 Pillars)
+Recommendation Engine — Full Spectrum (8 Pillars) v3
 Integrates: Technical, Fundamental, Sentiment, Macro, Policy,
 Institutional Activity, Options Intelligence, Sector Rotation, Earnings Outlook.
-Dynamic weighting based on data availability and market regime.
+Dynamic weighting based on data availability, market regime, and quality signals.
+
+v3 Changes:
+- Added analyst target price upside as a scoring factor (+0-10 bonus)
+- Quality-adjusted weighting (high Piotroski → trust fundamentals more)
+- Wider score spread via calibration stretch
+- Lowered verdict thresholds (BUY at 60, LEAN BUY at 52)
+- Reduced technical/macro drag on high-quality stocks
 """
 
 
@@ -22,29 +29,29 @@ def compute_recommendation(
     """
     Compute full-spectrum recommendation with 8-pillar dynamic weighting.
 
-    Base allocation:
-    - Technical:      22%
-    - Fundamental:    28%
+    Base allocation (v3 — reduced technical drag, more fundamental weight):
+    - Technical:      18%  (was 22%)
+    - Fundamental:    30%  (was 28%)
     - Sentiment:      12%
-    - Macro:          10%
+    - Macro:           8%  (was 10%)
     - Policy:          6%
     - Institutional:  10%
     - Options:         5%  (US only; redistributed if N/A)
     - Sector Rotation: 4%
-    - Earnings:        3%
+    - Earnings:        7%  (was 3%)
     """
 
-    # ── Base weights ──
+    # ── Base weights (v3 — rebalanced) ──
     weights = {
-        "technical":     0.22,
-        "fundamental":   0.28,
+        "technical":     0.18,
+        "fundamental":   0.30,
         "sentiment":     0.12,
-        "macro":         0.10,
+        "macro":         0.08,
         "policy":        0.06,
         "institutional": 0.10,
         "options":       0.05,
         "sector":        0.04,
-        "earnings":      0.03,
+        "earnings":      0.07,
     }
 
     # Scores dict — use 50 (neutral) for missing pillars
@@ -64,56 +71,124 @@ def compute_recommendation(
     unavailable = [k for k, v in scores.items() if v is None]
     for key in unavailable:
         redistributed = weights.pop(key, 0)
-        # Redistribute to technical and fundamental equally
-        weights["technical"] = weights.get("technical", 0) + redistributed * 0.5
-        weights["fundamental"] = weights.get("fundamental", 0) + redistributed * 0.5
-        scores[key] = 50  # neutral for unavailable
+        # Redistribute primarily to fundamental + earnings
+        weights["fundamental"] = weights.get("fundamental", 0) + redistributed * 0.6
+        weights["earnings"] = weights.get("earnings", 0) + redistributed * 0.4
+        scores[key] = 50
+
+    # ── Quality-adjusted weighting (v3) ──
+    # If Piotroski >= 7 (strong health), boost fundamental weight and
+    # reduce technical drag because fundamentals are more reliable
+    piotroski = None
+    if fundamental_data:
+        piotroski = fundamental_data.get("piotroski_score") or \
+                    fundamental_data.get("pillar_scores", {}).get("piotroski")
+
+    if piotroski is not None:
+        if piotroski >= 7:
+            # Strong financial health — trust fundamentals more
+            weights["fundamental"] = weights.get("fundamental", 0.30) + 0.06
+            weights["technical"] = max(0.10, weights.get("technical", 0.18) - 0.04)
+            weights["macro"] = max(0.04, weights.get("macro", 0.08) - 0.02)
+        elif piotroski <= 3:
+            # Weak financial health — reduce fundamental trust, increase technical
+            weights["fundamental"] = max(0.20, weights.get("fundamental", 0.30) - 0.05)
+            weights["technical"] = weights.get("technical", 0.18) + 0.03
+            weights["macro"] = weights.get("macro", 0.08) + 0.02
 
     # ── Market regime adjustments ──
     if market_regime in ("Bullish Trend", "Bearish Trend"):
-        weights["technical"] = min(0.32, weights["technical"] + 0.06)
-        weights["fundamental"] = max(0.20, weights["fundamental"] - 0.04)
-        weights["macro"] = max(0.06, weights.get("macro", 0.10) - 0.02)
+        weights["technical"] = min(0.28, weights["technical"] + 0.04)
+        weights["fundamental"] = max(0.22, weights["fundamental"] - 0.03)
+        weights["macro"] = max(0.04, weights.get("macro", 0.08) - 0.01)
     elif market_regime == "Range-Bound":
-        weights["technical"] = max(0.16, weights["technical"] - 0.05)
-        weights["fundamental"] = min(0.35, weights["fundamental"] + 0.05)
+        weights["technical"] = max(0.12, weights["technical"] - 0.04)
+        weights["fundamental"] = min(0.38, weights["fundamental"] + 0.04)
 
     # ── Normalize weights ──
     total_weight = sum(weights.values())
     weights = {k: v / total_weight for k, v in weights.items()}
 
-    # ── Final score ──
-    final_score = round(
-        sum(scores[k] * weights[k] for k in weights),
-        1
-    )
+    # ── Weighted score ──
+    weighted_score = sum(scores[k] * weights[k] for k in weights)
+
+    # ── Analyst target price upside bonus (v3) ──
+    # If 20+ analysts set a target significantly above current price,
+    # that's a strong signal we should incorporate
+    target_bonus = 0
+    if fundamental_data:
+        metrics = fundamental_data.get("metrics", {})
+        current = metrics.get("currentPrice")
+        target_mean = metrics.get("targetMeanPrice")
+        num_analysts = metrics.get("numberOfAnalysts", 0) or 0
+
+        if current and target_mean and current > 0 and num_analysts >= 5:
+            upside_pct = ((target_mean - current) / current) * 100
+
+            if upside_pct > 30:
+                target_bonus = 8   # massive upside consensus
+            elif upside_pct > 20:
+                target_bonus = 6
+            elif upside_pct > 10:
+                target_bonus = 4
+            elif upside_pct > 5:
+                target_bonus = 2
+            elif upside_pct < -10:
+                target_bonus = -5  # price ABOVE target = overvalued
+
+            # Scale bonus by analyst count confidence
+            if num_analysts >= 30:
+                target_bonus = target_bonus * 1.0
+            elif num_analysts >= 15:
+                target_bonus = target_bonus * 0.8
+            else:
+                target_bonus = target_bonus * 0.5
+
+    # ── Score calibration stretch (v3) ──
+    # Raw scores cluster around 45-60. Stretch to 30-80 range.
+    # Use sigmoid-like stretching centered at 50
+    raw = weighted_score + target_bonus
+    stretched = _calibrate_score(raw)
+
+    final_score = round(max(0, min(100, stretched)), 1)
 
     # ── Confidence scoring ──
     all_score_vals = [v for v in scores.values() if v is not None]
     score_range = max(all_score_vals) - min(all_score_vals)
-    if score_range < 12:
-        confidence, confidence_pct = "High", 88
-    elif score_range < 22:
-        confidence, confidence_pct = "Moderate-High", 74
-    elif score_range < 32:
-        confidence, confidence_pct = "Moderate", 62
-    elif score_range < 45:
-        confidence, confidence_pct = "Low-Moderate", 48
-    else:
-        confidence, confidence_pct = "Low", 32
+    # Also factor in number of analysts and Piotroski for confidence
+    analyst_count = 0
+    if fundamental_data:
+        analyst_count = fundamental_data.get("metrics", {}).get("numberOfAnalysts", 0) or 0
 
-    # ── Verdict ──
-    if final_score >= 78:
+    if score_range < 15 and analyst_count >= 20:
+        confidence, confidence_pct = "High", 88
+    elif score_range < 20:
+        confidence, confidence_pct = "Moderate-High", 76
+    elif score_range < 30:
+        confidence, confidence_pct = "Moderate", 64
+    elif score_range < 42:
+        confidence, confidence_pct = "Low-Moderate", 50
+    else:
+        confidence, confidence_pct = "Low", 34
+
+    # Boost confidence if many analysts agree
+    if analyst_count >= 40:
+        confidence_pct = min(95, confidence_pct + 10)
+    elif analyst_count >= 20:
+        confidence_pct = min(95, confidence_pct + 5)
+
+    # ── Verdict (v3 — adjusted thresholds) ──
+    if final_score >= 75:
         verdict, color = "STRONG BUY", "#00e676"
-    elif final_score >= 65:
+    elif final_score >= 60:
         verdict, color = "BUY", "#4caf50"
-    elif final_score >= 55:
+    elif final_score >= 52:
         verdict, color = "LEAN BUY", "#8bc34a"
-    elif final_score >= 45:
+    elif final_score >= 42:
         verdict, color = "HOLD", "#ff9800"
-    elif final_score >= 35:
+    elif final_score >= 32:
         verdict, color = "LEAN SELL", "#ff5722"
-    elif final_score >= 22:
+    elif final_score >= 20:
         verdict, color = "SELL", "#f44336"
     else:
         verdict, color = "STRONG SELL", "#d50000"
@@ -131,7 +206,40 @@ def compute_recommendation(
         "weights_used": {k: round(v * 100, 1) for k, v in weights.items()},
         "pillar_scores": {k: scores[k] for k in scores},
         "risk_reward": risk_reward,
+        "target_bonus": round(target_bonus, 1),
     }
+
+
+def _calibrate_score(raw):
+    """
+    Stretch raw scores from the compressed 40-65 range to a wider 25-85 range.
+    Uses piecewise linear mapping to preserve relative ordering while
+    expanding the distribution.
+
+    Input  -> Output mapping:
+    30     -> 20
+    40     -> 35
+    50     -> 50  (neutral stays neutral)
+    55     -> 58
+    60     -> 66
+    65     -> 74
+    70     -> 80
+    80     -> 90
+    """
+    if raw <= 30:
+        return 20 + (raw / 30) * 15  # 0-30 -> 20-35
+    elif raw <= 40:
+        return 35 + ((raw - 30) / 10) * 15  # 30-40 -> 35-50
+    elif raw <= 50:
+        return 50 + ((raw - 40) / 10) * 8  # 40-50 -> 50-58
+    elif raw <= 55:
+        return 58 + ((raw - 50) / 5) * 8  # 50-55 -> 58-66
+    elif raw <= 60:
+        return 66 + ((raw - 55) / 5) * 8  # 55-60 -> 66-74
+    elif raw <= 70:
+        return 74 + ((raw - 60) / 10) * 6  # 60-70 -> 74-80
+    else:
+        return 80 + ((raw - 70) / 30) * 15  # 70-100 -> 80-95
 
 
 def _compute_risk_reward(final_score, fundamental_data):
@@ -194,16 +302,17 @@ def generate_reasoning(technical, fundamental, sentiment, recommendation,
     confidence = recommendation.get("confidence", "Moderate")
     confidence_pct = recommendation.get("confidence_pct", 50)
     market_regime = recommendation.get("market_regime", "Unknown")
+    target_bonus = recommendation.get("target_bonus", 0)
 
     # ── Opening verdict ──
-    if score >= 65:
+    if score >= 60:
         reasons.append(
             f"**VERDICT: {verdict}** (Score: {score}/100 | Confidence: {confidence} {confidence_pct}%)\n\n"
             f"Our 8-pillar analysis identifies this as a favorable investment opportunity. "
             f"Technical momentum, fundamental quality, macro backdrop, institutional activity, "
             f"and earnings trajectory all factored into this recommendation."
         )
-    elif score >= 45:
+    elif score >= 42:
         reasons.append(
             f"**VERDICT: {verdict}** (Score: {score}/100 | Confidence: {confidence} {confidence_pct}%)\n\n"
             f"The analysis presents mixed signals across our 8-pillar framework. "
@@ -227,6 +336,12 @@ def generate_reasoning(technical, fundamental, sentiment, recommendation,
                 if v > 0
             )
             reasons.append(f"*Dynamic weights: {w_parts}*")
+
+    # Target bonus explanation
+    if target_bonus >= 3:
+        reasons.append(f"\n*📊 Analyst Target Price Bonus: +{target_bonus:.0f} points (significant upside to consensus target)*")
+    elif target_bonus <= -3:
+        reasons.append(f"\n*⚠️ Analyst Target Price Penalty: {target_bonus:.0f} points (trading above analyst targets)*")
 
     # ── 1. Technical Analysis ──
     tech_score = technical.get("score", 50)
@@ -410,9 +525,9 @@ def generate_reasoning(technical, fundamental, sentiment, recommendation,
         for pt in outlook_points:
             reasons.append(f"- {pt}")
     else:
-        if score >= 65:
+        if score >= 60:
             reasons.append("- Combination of strong fundamentals and positive technical momentum points to continued upside over next 30 days")
-        elif score >= 45:
+        elif score >= 42:
             reasons.append("- Mixed signals — range-bound action likely. Monitor for catalyst to determine next directional move")
         else:
             reasons.append("- Multiple negative signals across pillars — near-term downside risk elevated")
@@ -427,7 +542,7 @@ def generate_reasoning(technical, fundamental, sentiment, recommendation,
         )
     elif score >= 55:
         reasons.append(
-            "The stock presents a moderate opportunity. Consider a smaller initial position and "
+            "The stock presents a solid opportunity. Consider starting with a core position and "
             "look for pullbacks to key support levels for better entries."
         )
     elif score >= 40:

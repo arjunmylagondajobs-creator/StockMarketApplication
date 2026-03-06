@@ -553,6 +553,7 @@ def compute_technical_score(indicators, adx_val):
     """
     Institutional-grade weighted composite scoring.
     Dynamic weights: trending markets weight MACD/ADX higher; ranging markets weight RSI/BB higher.
+    v3: Neutral bias correction — range-bound stocks shouldn't be penalized.
     """
     is_trending = adx_val is not None and adx_val > 25
 
@@ -585,7 +586,21 @@ def compute_technical_score(indicators, adx_val):
     for key, weight in weights.items():
         total += indicators.get(key, 50) * weight
 
-    return max(0, min(100, round(total)))
+    raw_score = round(total)
+
+    # v3: Neutral bias correction
+    # Range-bound markets are not bearish — a score of 45-48 should be 50-53
+    # This prevents technical drag on fundamentally sound stocks
+    if not is_trending and 38 <= raw_score <= 55:
+        # Nudge toward neutral-positive in non-trending conditions
+        raw_score = int(raw_score + (55 - raw_score) * 0.35)
+
+    # Floor: only allow scores below 35 if in a clear bearish trend
+    is_bearish_trend = is_trending and indicators.get("adx", 50) < 40
+    if raw_score < 35 and not is_bearish_trend:
+        raw_score = max(35, raw_score)
+
+    return max(0, min(100, raw_score))
 
 
 # ═══════════════════════════════════════════════════════════
