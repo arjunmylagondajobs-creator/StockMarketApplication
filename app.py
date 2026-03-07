@@ -42,11 +42,20 @@ def login():
     """Login page — validates the unique access code."""
     error = None
     if request.method == "POST":
-        code = request.form.get("access_code", "").strip()
+        # Support both AJAX (JSON) and regular form submissions
+        if request.is_json:
+            code = request.get_json().get("access_code", "").strip()
+        else:
+            code = request.form.get("access_code", "").strip()
+
         if code == ACCESS_CODE:
             session["authenticated"] = True
+            if request.is_json:
+                return jsonify({"success": True})
             return redirect(url_for("index"))
         else:
+            if request.is_json:
+                return jsonify({"success": False, "error": "Invalid access code. Please try again."}), 401
             error = "Invalid access code. Please try again."
     return render_template("login.html", error=error)
 
