@@ -1,6 +1,6 @@
 """
 Critical Test Suite for Stock Investment Analyzer (8-Pillar)
-Tests: All pillars present, edge cases, India vs US, error handling, response times.
+Tests: Access-code auth, all pillars, edge cases, India vs US, error handling.
 """
 
 import requests
@@ -9,7 +9,21 @@ import time
 import sys
 
 BASE = "http://localhost:5000"
+ACCESS_CODE = "StockReferCode5282"
 RESULTS = []
+
+
+def get_authenticated_session():
+    """Create a requests.Session that is authenticated via the access code."""
+    s = requests.Session()
+    # POST the access code to login
+    r = s.post(f"{BASE}/login", data={"access_code": ACCESS_CODE}, allow_redirects=True, timeout=15)
+    return s
+
+
+# Create a shared authenticated session for all tests
+SESSION = get_authenticated_session()
+
 
 def test(name, func):
     """Run a test and record result."""
@@ -31,8 +45,54 @@ def test(name, func):
 
 def analyze(ticker):
     """Helper: call /api/analyze and return parsed JSON."""
-    r = requests.post(f"{BASE}/api/analyze", json={"ticker": ticker}, timeout=180)
+    r = SESSION.post(f"{BASE}/api/analyze", json={"ticker": ticker}, timeout=180)
     return r.status_code, r.json()
+
+
+# ====================================================
+# TEST 0: Access Code Authentication
+# ====================================================
+print("\n=== TEST GROUP 0: Access Code Authentication ===")
+
+def t0_unauthenticated_redirect():
+    """Unauthenticated request to / should redirect to /login."""
+    r = requests.get(f"{BASE}/", allow_redirects=False, timeout=15)
+    return r.status_code == 302 and "/login" in r.headers.get("Location", "")
+test("0.1 Unauthenticated GET / redirects to /login", t0_unauthenticated_redirect)
+
+def t0_unauthenticated_api():
+    """Unauthenticated API call should redirect to /login."""
+    r = requests.post(f"{BASE}/api/analyze", json={"ticker": "AAPL"}, allow_redirects=False, timeout=15)
+    return r.status_code == 302 and "/login" in r.headers.get("Location", "")
+test("0.2 Unauthenticated POST /api/analyze redirects to /login", t0_unauthenticated_api)
+
+def t0_wrong_code():
+    """Wrong access code should show login page again (not redirect to /)."""
+    r = requests.post(f"{BASE}/login", data={"access_code": "WRONG_CODE"}, allow_redirects=False, timeout=15)
+    # Should return 200 with login page (containing error), NOT a redirect to /
+    return r.status_code == 200
+test("0.3 Wrong access code is rejected", t0_wrong_code)
+
+def t0_correct_code():
+    """Correct access code should redirect to /."""
+    s = requests.Session()
+    r = s.post(f"{BASE}/login", data={"access_code": ACCESS_CODE}, allow_redirects=False, timeout=15)
+    return r.status_code == 302 and r.headers.get("Location", "").endswith("/")
+test("0.4 Correct access code grants access (redirect to /)", t0_correct_code)
+
+def t0_login_page_loads():
+    """Login page should load properly."""
+    r = requests.get(f"{BASE}/login", timeout=15)
+    return r.status_code == 200 and "access code" in r.text.lower()
+test("0.5 Login page loads with access code form", t0_login_page_loads)
+
+def t0_logout():
+    """Logout should clear session and redirect to /login."""
+    s = requests.Session()
+    s.post(f"{BASE}/login", data={"access_code": ACCESS_CODE}, timeout=15)
+    r = s.get(f"{BASE}/logout", allow_redirects=False, timeout=15)
+    return r.status_code == 302 and "/login" in r.headers.get("Location", "")
+test("0.6 Logout clears session and redirects to /login", t0_logout)
 
 
 # ====================================================
@@ -244,7 +304,7 @@ def t4_empty():
 test("4.2 Empty ticker returns 400", t4_empty)
 
 def t4_no_body():
-    r = requests.post(f"{BASE}/api/analyze", json={}, timeout=30)
+    r = SESSION.post(f"{BASE}/api/analyze", json={}, timeout=30)
     return r.status_code == 400
 test("4.3 Missing ticker field returns 400", t4_no_body)
 
@@ -255,13 +315,13 @@ test("4.3 Missing ticker field returns 400", t4_no_body)
 print("\n=== TEST GROUP 5: Search API ===")
 
 def t5_search():
-    r = requests.get(f"{BASE}/api/search?q=Apple", timeout=30)
+    r = SESSION.get(f"{BASE}/api/search?q=Apple", timeout=30)
     data = r.json()
     return r.status_code == 200 and len(data) > 0 and any("AAPL" in d.get("symbol", "") for d in data)
 test("5.1 Search 'Apple' returns AAPL", t5_search)
 
 def t5_search_short():
-    r = requests.get(f"{BASE}/api/search?q=A", timeout=30)
+    r = SESSION.get(f"{BASE}/api/search?q=A", timeout=30)
     data = r.json()
     return r.status_code == 200 and data == []
 test("5.2 Search too-short query returns []", t5_search_short)
@@ -302,19 +362,24 @@ test("6.3 Piotroski F-Score 0-9 with details", t6_piotroski_range)
 
 
 # ====================================================
-# TEST 7: Frontend pages
+# TEST 7: Frontend pages (authenticated)
 # ====================================================
 print("\n=== TEST GROUP 7: Frontend Pages ===")
 
 def t7_index():
-    r = requests.get(f"{BASE}/", timeout=15)
+    r = SESSION.get(f"{BASE}/", timeout=15)
     return r.status_code == 200 and "Stock" in r.text
-test("7.1 Index page loads", t7_index)
+test("7.1 Index page loads (authenticated)", t7_index)
 
 def t7_top_picks():
-    r = requests.get(f"{BASE}/top-picks", timeout=15)
+    r = SESSION.get(f"{BASE}/top-picks", timeout=15)
     return r.status_code == 200
-test("7.2 Top Picks page loads", t7_top_picks)
+test("7.2 Top Picks page loads (authenticated)", t7_top_picks)
+
+def t7_logout_link():
+    r = SESSION.get(f"{BASE}/", timeout=15)
+    return r.status_code == 200 and "logout" in r.text.lower()
+test("7.3 Index page has Logout link", t7_logout_link)
 
 
 # ====================================================

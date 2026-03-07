@@ -3,7 +3,8 @@ Stock Investment Analyzer — Flask Application
 Main entry point wiring all 8 analysis pillars and serving the frontend.
 """
 
-from flask import Flask, render_template, request, jsonify
+import os
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import yfinance as yf
 import traceback
 
@@ -20,6 +21,41 @@ from analysis.sector_rotation import run_sector_rotation_analysis
 from analysis.earnings_outlook import run_earnings_outlook
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "stock-analyzer-secret-key-2026")
+
+# ─── Access Code Configuration ───
+ACCESS_CODE = os.environ.get("STOCK_APP_ACCESS_CODE", "StockReferCode5282")
+
+
+@app.before_request
+def require_access_code():
+    """Gate every request behind access-code authentication."""
+    allowed_endpoints = ("login", "static")
+    if request.endpoint in allowed_endpoints:
+        return None
+    if not session.get("authenticated"):
+        return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Login page — validates the unique access code."""
+    error = None
+    if request.method == "POST":
+        code = request.form.get("access_code", "").strip()
+        if code == ACCESS_CODE:
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+        else:
+            error = "Invalid access code. Please try again."
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout")
+def logout():
+    """Clear session and redirect to login."""
+    session.clear()
+    return redirect(url_for("login"))
 
 
 EXCHANGE_SUFFIXES = [
